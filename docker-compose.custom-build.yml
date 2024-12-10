@@ -1,0 +1,16 @@
+services:
+  arch-reflector:
+    build: .
+    container_name: arch-reflector
+    environment:
+      - USE_CRON=false
+      - REFLECTOR_INTERVAL=3600
+      - REFLECTOR_ARGS=--country Germany --latest 10 --protocol https --sort rate
+    # Bind the /etc/pacman.d directory to a named volume so the updated mirrorlist
+    # is stored persistently outside the container's writable layer.
+    volumes:
+      - mirrorlist:/etc/pacman.d
+    restart: always
+
+volumes:
+  mirrorlist:
