@@ -19,24 +19,13 @@ ONE_SHOT="${ONE_SHOT:-false}"
 REFLECTOR_SCHEDULE="${REFLECTOR_SCHEDULE:-0 * * * *}"
 LOG_LEVEL="${LOG_LEVEL:-normal}"
 
-# Function for logging based on LOG_LEVEL
+# Logging function
 log() {
     local level="$1"
     shift
-    case "$LOG_LEVEL" in
-        quiet)
-            [ "$level" = "error" ] && echo "ERROR: $*"
-            ;;
-        debug)
-            echo "[$level] $*"
-            ;;
-        normal)
-            [ "$level" = "error" ] && echo "ERROR: $*" || ([ "$level" = "normal" ] && echo "$*")
-            ;;
-        *)
-            [ "$level" = "error" ] && echo "ERROR: $*" || ([ "$level" = "normal" ] && echo "$*")
-            ;;
-    esac
+    if [[ "$LOG_LEVEL" == "debug" || ( "$LOG_LEVEL" == "normal" && "$level" != "debug" ) || "$level" == "error" ]]; then
+        echo "[$level] $*"
+    fi
 }
 
 # Set timezone if provided
@@ -66,6 +55,10 @@ if [ "$ONE_SHOT" = "true" ]; then
 else
     log normal "Running in cron mode with schedule: $REFLECTOR_SCHEDULE"
 
+    # Run the script once at container startup
+    log normal "Running reflector-update.sh at startup."
+    /usr/local/bin/reflector-update.sh || log error "Initial reflector-update.sh execution failed!"
+
     # Ensure the required cache directory exists
     mkdir -p /root/.cache/crontab
 
@@ -76,7 +69,7 @@ else
 
     # Create a crontab entry
     echo "$REFLECTOR_SCHEDULE /usr/local/bin/reflector-update.sh >> /var/log/reflector-update.log 2>&1" | crontab -
-    
+
     # Validate that the crontab was set correctly
     if ! crontab -l | grep -q "/usr/local/bin/reflector-update.sh"; then
         log error "Failed to set crontab entry!"
@@ -84,6 +77,6 @@ else
     fi
 
     # Start the cron daemon in foreground mode
-    log normal "Starting cron daemon..."
+    log normal "Starting cron daemon in foreground..."
     exec crond -f
 fi

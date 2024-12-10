@@ -24,12 +24,8 @@ COPY reflector-update.sh /usr/local/bin/reflector-update.sh
 # Ensure scripts are executable
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/reflector-update.sh
 
-# Add bash as a default shell for debugging
-CMD ["/bin/bash"]
+# Healthcheck: Ensure cron is running and mirrorlist exists
+HEALTHCHECK --interval=30s --timeout=5s CMD pgrep crond && [ -s /etc/pacman.d/mirrorlist ] || exit 1
 
 # Use the entrypoint script to handle all startup logic
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-
-# Set a HEALTHCHECK to ensure the mirrorlist is non-empty
-HEALTHCHECK --interval=5m --timeout=10s CMD \
-    [ -s /etc/pacman.d/mirrorlist ] || exit 1
