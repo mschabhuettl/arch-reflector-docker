@@ -1,4 +1,4 @@
-name: Advanced Build and Push Docker CI/CD Workflow
+name: Advanced Build, Test, and Push Docker CI/CD Workflow
 
 on:
   push:
@@ -11,14 +11,13 @@ on:
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
-  build-and-push:
+  build-test-and-push:
     runs-on: ubuntu-latest
 
     permissions:
       contents: read   # Required to read repository contents
       packages: write  # Required for GitHub Container Registry (GHCR)
 
-    # Da wir nur ein Image und eine Architektur bauen, benötigen wir kein komplexes Matrix-Setup mehr.
     strategy:
       matrix:
         architecture: [amd64]
@@ -28,14 +27,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Log in to Docker Hub
+      # Step 2: Run Security Tests
+      - name: Run Security Tests
+        run: |
+          chmod +x tests/test_security.sh
+          ./tests/test_security.sh
+
+      # Step 3: Run Functionality Tests
+      - name: Run Functionality Tests
+        run: |
+          chmod +x tests/test_functionality.sh
+          ./tests/test_functionality.sh
+
+      # Step 4: Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Step 3: Log in to GitHub Container Registry (GHCR)
+      # Step 5: Log in to GitHub Container Registry (GHCR)
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -43,11 +54,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN_ARCH_REFLECTOR_DOCKER }}
 
-      # Step 4: Set up Docker Buildx
+      # Step 6: Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # Step 5: Cache Docker layers
+      # Step 7: Cache Docker layers
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
@@ -56,7 +67,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker-
 
-      # Step 6: Build and push the image
+      # Step 8: Build and push the image
       - name: Build and Push
         uses: docker/build-push-action@v4
         with:
@@ -71,3 +82,9 @@ jobs:
             mschabhuettl/arch-reflector-docker:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/arch-reflector-docker:latest
             ghcr.io/${{ github.repository_owner }}/arch-reflector-docker:${{ github.sha }}
+
+      # Step 9: Run Build and Runtime Tests
+      - name: Run Build and Runtime Tests
+        run: |
+          chmod +x tests/test_build_and_run.sh
+          ./tests/test_build_and_run.sh
