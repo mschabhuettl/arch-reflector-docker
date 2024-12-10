@@ -35,10 +35,13 @@ files_to_check=(
     "/etc/pacman.d/mirrorlist"
     "/var/log/reflector-update.log"
 )
-for file in "${files_to_check[@]}"; do
+expected_perms=("644" "666") # Define expected permissions for each file
+for i in "${!files_to_check[@]}"; do
+    file="${files_to_check[$i]}"
+    expected="${expected_perms[$i]}"
     perms=$(docker exec "$CONTAINER_NAME" stat -c '%a' "$file" || echo "missing")
-    if [[ "$perms" != "666" ]]; then
-        log "FAIL: File '$file' has incorrect permissions: $perms (expected 666)."
+    if [[ "$perms" != "$expected" ]]; then
+        log "FAIL: File '$file' has incorrect permissions: $perms (expected $expected)."
         exit 1
     fi
 done
