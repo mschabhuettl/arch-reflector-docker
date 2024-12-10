@@ -3,14 +3,19 @@ services:
     build: .
     container_name: arch-reflector
     environment:
-      # If you want to run once and exit:
-      # - ONE_SHOT=true
-      # Otherwise, rely on cron:
+      # ONE_SHOT=true: update once and exit
+      # ONE_SHOT=false: run cron schedule (default)
       - ONE_SHOT=false
-      - REFLECTOR_SCHEDULE=0 0 * * *
-      # Without REFLECTOR_ARGS, defaults are used
-      # - REFLECTOR_ARGS="--country France,Germany --latest 10 --protocol https --save /etc/pacman.d/mirrorlist"
+      # Change schedule if desired
+      - REFLECTOR_SCHEDULE=0 * * * *
+      # Reflector args are optional; if unset, defaults are used
+      # - REFLECTOR_ARGS=--country US --latest 5 --protocol https --save /etc/pacman.d/mirrorlist
+      # Change TZ if needed, e.g. Europe/Berlin
+      # - TZ=Europe/Berlin
+      # LOG_LEVEL can be quiet, normal, or debug
+      - LOG_LEVEL=normal
     volumes:
+      # Persist mirrorlist so it survives container restarts
       - mirrorlist:/etc/pacman.d
     restart: always
 
