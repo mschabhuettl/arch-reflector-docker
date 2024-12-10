@@ -7,9 +7,6 @@ set -euo pipefail
 # Default arguments (if REFLECTOR_ARGS not set):
 #   --save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
 #
-# After updating the mirrorlist, it logs a timestamped message with the number of mirrors chosen.
-# Also, checks the log file size and rotates if > 1MB.
-#
 # LOG_LEVEL influences how much output is printed:
 # - quiet: minimal
 # - normal: standard messages
@@ -17,27 +14,21 @@ set -euo pipefail
 
 LOG_LEVEL="${LOG_LEVEL:-normal}"
 
-# Log file
+# Log file for updates
 LOG_FILE="/var/log/reflector-update.log"
+DEBUG_LOG="/tmp/reflector-debug.log"
 
-# Logging function respecting LOG_LEVEL
+# Enable debugging and log output to a debug file
+set -x
+exec >> "$DEBUG_LOG" 2>&1
+
+# Logging function
 log() {
     local level="$1"
     shift
-    case "$LOG_LEVEL" in
-        quiet)
-            [ "$level" = "error" ] && echo "ERROR: $*"
-            ;;
-        debug)
-            echo "[$level] $*"
-            ;;
-        normal)
-            [ "$level" = "error" ] && echo "ERROR: $*" || ([ "$level" = "normal" ] && echo "$*")
-            ;;
-        *)
-            [ "$level" = "error" ] && echo "ERROR: $*" || ([ "$level" = "normal" ] && echo "$*")
-            ;;
-    esac
+    if [[ "$LOG_LEVEL" == "debug" || ( "$LOG_LEVEL" == "normal" && "$level" != "debug" ) || "$level" == "error" ]]; then
+        echo "[$level] $*"
+    fi
 }
 
 DEFAULT_ARGS="--save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5"
@@ -49,8 +40,10 @@ if [ ! -f "$LOG_FILE" ]; then
     chmod 666 "$LOG_FILE"
 fi
 
+log debug "Starting Reflector Update Script"
+log debug "Arguments for reflector: $ARGS"
+
 # Run reflector
-log debug "Executing reflector command with args: $ARGS"
 if /usr/bin/reflector $ARGS; then
     log normal "Reflector executed successfully."
 else
