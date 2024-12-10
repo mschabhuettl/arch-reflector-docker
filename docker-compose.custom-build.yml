@@ -3,11 +3,13 @@ services:
     build: .
     container_name: arch-reflector
     environment:
-      - USE_CRON=false
-      - REFLECTOR_INTERVAL=3600
-      - REFLECTOR_ARGS=--country Germany --latest 10 --protocol https --sort rate
-    # Bind the /etc/pacman.d directory to a named volume so the updated mirrorlist
-    # is stored persistently outside the container's writable layer.
+      # If you want to run once and exit:
+      # - ONE_SHOT=true
+      # Otherwise, rely on cron:
+      - ONE_SHOT=false
+      - REFLECTOR_SCHEDULE=0 0 * * *
+      # Without REFLECTOR_ARGS, defaults are used
+      # - REFLECTOR_ARGS="--country France,Germany --latest 10 --protocol https --save /etc/pacman.d/mirrorlist"
     volumes:
       - mirrorlist:/etc/pacman.d
     restart: always
