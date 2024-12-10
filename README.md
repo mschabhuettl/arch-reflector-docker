@@ -33,7 +33,7 @@ docker run -d
   --name arch-reflector 
   -e ONE_SHOT=false 
   -e REFLECTOR_SCHEDULE="0 * * * *" 
-  -v arch_mirrors:/etc/pacman.d 
+  -v mirrorlist:/etc/pacman.d 
   mschabhuettl/arch-reflector-docker:latest
 ```
 This runs the container in cron mode, updating your mirrorlist every hour.
@@ -95,7 +95,7 @@ If you only want to update your mirrorlist once and then exit:
 ```bash
 docker run --rm 
   -e ONE_SHOT=true 
-  -v arch_mirrors:/etc/pacman.d 
+  -v mirrorlist:/etc/pacman.d 
   mschabhuettl/arch-reflector-docker:latest
 ```
 This will run reflector once and then the container stops.
@@ -106,13 +106,13 @@ This will run reflector once and then the container stops.
 
 ### Environment Variables
 
-| Variable             | Description                                                      | Default                                     |
-|----------------------|------------------------------------------------------------------|---------------------------------------------|
-| `ONE_SHOT`           | "true": update once and exit, "false": use cron for scheduling   | `false`                                     |
-| `REFLECTOR_SCHEDULE` | Cron schedule string (5 fields), e.g. "0 * * * *"                | "0 * * * *" (hourly)                        |
+| Variable             | Description                                                      | Default                                                                                |
+|----------------------|------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| `ONE_SHOT`           | "true": update once and exit, "false": use cron for scheduling   | `false`                                                                                |
+| `REFLECTOR_SCHEDULE` | Cron schedule string (5 fields), e.g. "0 * * * *"                | "0 * * * *" (hourly)                                                                   |
 | `REFLECTOR_ARGS`     | Custom reflector parameters to override defaults                 | `--save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5` |
-| `TZ`                 | Timezone, e.g. "Europe/Vienna"                                   | UTC                                         |
-| `LOG_LEVEL`          | Logging verbosity: "quiet", "normal", or "debug"                 | normal                                      |
+| `TZ`                 | Timezone, e.g. "Europe/Vienna"                                   | UTC                                                                                    |
+| `LOG_LEVEL`          | Logging verbosity: "quiet", "normal", or "debug"                 | normal                                                                                 |
 
 **Note:** If `REFLECTOR_ARGS` is not set, the container uses the default parameters, which already produce a solid mirrorlist.
 
@@ -148,7 +148,7 @@ For example, to use Vienna time:
 ## 💡 **Tips**
 - **Adjust Scheduling**: Change `REFLECTOR_SCHEDULE` to run more frequently or less often as needed.
 - **Customize Reflector Arguments**: Specify `REFLECTOR_ARGS` to filter by other countries, protocols, or sorting criteria.
-- **Persistent Volume**: The volume `arch_mirrors` ensures your mirrorlist persists across container updates or restarts.
+- **Persistent Volume**: The volume `mirrorlist` ensures your mirrorlist persists across container updates or restarts.
 - **Integration with Other Systems**: Use this image in CI/CD pipelines, or combine it with other containers that rely on fast Arch mirrors.
 
 ---
