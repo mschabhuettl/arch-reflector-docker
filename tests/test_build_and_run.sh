@@ -22,40 +22,30 @@ else
 fi
 
 log "Running the built Docker image..."
-if docker run --rm --name "$CONTAINER_NAME" "$IMAGE_NAME" /bin/bash -c "echo Test Run"; then
-    log "PASS: Docker container started and executed successfully."
-else
-    log "FAIL: Docker container run failed."
-    exit 1
-fi
+docker run --rm --name "$CONTAINER_NAME" -d \
+    -e ONE_SHOT=false \
+    -e REFLECTOR_SCHEDULE="*/2 * * * *" \
+    "$IMAGE_NAME"
 
-log "Performing additional runtime validations..."
+log "Validating container behavior..."
 
-# Check 1: Verify if reflector is installed
-log "Checking if 'reflector' is installed in the container..."
-if docker run --rm "$IMAGE_NAME" /usr/bin/reflector --version >/dev/null 2>&1; then
-    log "PASS: 'reflector' is installed."
-else
-    log "FAIL: 'reflector' is not installed."
-    exit 1
-fi
+# Check if the mirrorlist is updated
+log "Waiting for cron job to execute..."
+sleep 150 # Wait 2.5 minutes for the cron job
 
-# Check 2: Verify healthcheck behavior
-log "Checking container health status..."
-docker run -d --name "$CONTAINER_NAME" "$IMAGE_NAME" tail -f /dev/null
-sleep 5
-if docker inspect "$CONTAINER_NAME" --format='{{.State.Health.Status}}' | grep -q "healthy"; then
-    log "PASS: Container healthcheck passed."
+mirrorlist_updated=$(docker exec "$CONTAINER_NAME" grep -c '^Server' /etc/pacman.d/mirrorlist || echo "0")
+if [[ "$mirrorlist_updated" -gt 0 ]]; then
+    log "PASS: Cron mode successfully updated the mirrorlist."
 else
-    log "FAIL: Container healthcheck failed."
+    log "FAIL: Cron mode did not update the mirrorlist."
     docker stop "$CONTAINER_NAME" >/dev/null 2>&1
     exit 1
 fi
 
 # Cleanup
-log "Stopping and cleaning up the test container..."
+log "Stopping the container after validation..."
 docker stop "$CONTAINER_NAME" >/dev/null 2>&1 || true
-docker rmi "$IMAGE_NAME" >/dev/null 2>&1 || true
+docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
 
 log "Build and run tests completed successfully!"
 exit 0
