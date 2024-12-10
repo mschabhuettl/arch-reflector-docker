@@ -7,15 +7,15 @@ services:
       # ONE_SHOT=false: run cron schedule (default)
       - ONE_SHOT=false
 
-      # Change schedule if desired, default: "0 * * * *" for hourly
+      # Change schedule if desired, default: "0 * * * *" (every hour)
       - REFLECTOR_SCHEDULE=0 * * * *
 
-      # By default, reflector uses:
+      # Default Reflector arguments (if REFLECTOR_ARGS not set):
       # --save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
       # Uncomment and adjust if needed:
       # - REFLECTOR_ARGS=--save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
 
-      # Set TZ to Europe/Vienna if you want local time (instead of default UTC):
+      # Set TZ to Europe/Vienna for local time (default is UTC):
       # - TZ=Europe/Vienna
 
       # LOG_LEVEL can be quiet, normal, or debug. Default is normal if unset.
