@@ -35,7 +35,7 @@ files_to_check=(
     "/etc/pacman.d/mirrorlist"
     "/var/log/reflector-update.log"
 )
-expected_perms=("644" "666") # Define expected permissions for each file
+expected_perms=("644" "644") # Expected permissions for each file
 for i in "${!files_to_check[@]}"; do
     file="${files_to_check[$i]}"
     expected="${expected_perms[$i]}"
