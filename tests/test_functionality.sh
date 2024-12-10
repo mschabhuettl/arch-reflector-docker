@@ -32,12 +32,12 @@ fi
 log "Testing Cron mode..."
 docker run --rm --name "$CONTAINER_NAME" -d \
     -e ONE_SHOT=false \
-    -e REFLECTOR_SCHEDULE="*/2 * * * *" \
+    -e REFLECTOR_SCHEDULE="*/2 * * * *" \ # Temporär alle 2 Minuten
     -v mirrorlist-test:/etc/pacman.d \
     "$IMAGE_NAME"
 
 log "Waiting for cron job to execute..."
-sleep 150
+sleep 150 # Warte 2,5 Minuten, um sicherzustellen, dass der Cron-Job ausgeführt wurde
 
 mirrorlist_updated=$(docker exec "$CONTAINER_NAME" grep -c '^Server' /etc/pacman.d/mirrorlist || echo "0")
 if [[ "$mirrorlist_updated" -gt 0 ]]; then
