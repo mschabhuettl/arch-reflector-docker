@@ -19,14 +19,26 @@ ONE_SHOT="${ONE_SHOT:-false}"
 REFLECTOR_SCHEDULE="${REFLECTOR_SCHEDULE:-0 * * * *}"
 LOG_LEVEL="${LOG_LEVEL:-normal}"
 
-# Logging function
+# Function: Logging
 log() {
     local level="$1"
     shift
-    if [[ "$LOG_LEVEL" == "debug" || ( "$LOG_LEVEL" == "normal" && "$level" != "debug" ) || "$level" == "error" ]]; then
-        echo "[$level] $*"
+    if [[ "$LOG_LEVEL" =~ ^(quiet|normal|debug)$ ]]; then
+        if [[ "$LOG_LEVEL" == "debug" || ("$LOG_LEVEL" == "normal" && "$level" != "debug") || "$level" == "error" ]]; then
+            echo "[$level] $*"
+        fi
+    else
+        echo "[error] Invalid LOG_LEVEL: '$LOG_LEVEL'. Defaulting to 'normal'."
+        LOG_LEVEL="normal"
     fi
 }
+
+# Function: Cleanup on termination
+cleanup() {
+    log debug "Container stopping. Cleaning up..."
+    exit 0
+}
+trap cleanup SIGTERM SIGINT
 
 # Set timezone if provided
 if [ -n "${TZ:-}" ]; then
@@ -38,45 +50,51 @@ if [ -n "${TZ:-}" ]; then
     fi
 fi
 
+# Check for necessary commands
+for cmd in crontab crond /usr/local/bin/reflector-update.sh; do
+    if ! command -v "$cmd" &>/dev/null; then
+        log error "Required command '$cmd' is not available. Exiting."
+        exit 1
+    fi
+done
+
 # Validate cron schedule if not in one-shot mode
 if [ "$ONE_SHOT" = "false" ]; then
-    fields=$(echo "$REFLECTOR_SCHEDULE" | awk '{print NF}')
-    if [ "$fields" -ne 5 ]; then
+    if ! echo "$REFLECTOR_SCHEDULE" | grep -Eq '^(\S+\s+){4}\S+$'; then
         log error "Invalid REFLECTOR_SCHEDULE format: '$REFLECTOR_SCHEDULE'. Must have 5 fields."
         exit 1
     fi
 fi
 
+# One-shot mode
 if [ "$ONE_SHOT" = "true" ]; then
     log normal "Running in one-shot mode. Updating mirrorlist once and then exiting."
-    /usr/local/bin/reflector-update.sh
+    /usr/local/bin/reflector-update.sh || log error "One-shot update failed!"
     log normal "One-shot run completed. Exiting container now."
     exit 0
-else
-    log normal "Running in cron mode with schedule: $REFLECTOR_SCHEDULE"
-
-    # Run the script once at container startup
-    log normal "Running reflector-update.sh at startup."
-    /usr/local/bin/reflector-update.sh || log error "Initial reflector-update.sh execution failed!"
-
-    # Ensure the required cache directory exists
-    mkdir -p /root/.cache/crontab
-
-    # Ensure the log directory and file exist
-    mkdir -p /var/log
-    touch /var/log/reflector-update.log
-    chmod 666 /var/log/reflector-update.log
-
-    # Create a crontab entry
-    echo "$REFLECTOR_SCHEDULE /usr/local/bin/reflector-update.sh >> /var/log/reflector-update.log 2>&1" | crontab -
-
-    # Validate that the crontab was set correctly
-    if ! crontab -l | grep -q "/usr/local/bin/reflector-update.sh"; then
-        log error "Failed to set crontab entry!"
-        exit 1
-    fi
-
-    # Start the cron daemon in foreground mode
-    log normal "Starting cron daemon in foreground..."
-    exec crond -f
 fi
+
+# Cron mode
+log normal "Running in cron mode with schedule: $REFLECTOR_SCHEDULE"
+
+# Run the script once at container startup
+log normal "Running reflector-update.sh at startup."
+/usr/local/bin/reflector-update.sh || log error "Initial reflector-update.sh execution failed!"
+
+# Prepare directories and files
+mkdir -p /var/log /root/.cache/crontab
+touch /var/log/reflector-update.log
+chmod 666 /var/log/reflector-update.log
+
+# Create a crontab entry
+echo "$REFLECTOR_SCHEDULE /usr/local/bin/reflector-update.sh >> /var/log/reflector-update.log 2>&1" | crontab -
+
+# Validate crontab entry
+if ! crontab -l | grep -q "/usr/local/bin/reflector-update.sh"; then
+    log error "Failed to set crontab entry!"
+    exit 1
+fi
+
+# Start the cron daemon in foreground mode
+log normal "Starting cron daemon in foreground..."
+exec crond -f
