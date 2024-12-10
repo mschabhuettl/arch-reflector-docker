@@ -15,7 +15,7 @@ log() {
 log "Pulling the latest Docker image..."
 docker pull "$IMAGE_NAME"
 
-# Test 1: ONE_SHOT Mode
+# Test 1: Validate ONE_SHOT mode
 log "Testing ONE_SHOT mode..."
 docker run --rm \
     -e ONE_SHOT=true \
@@ -28,16 +28,16 @@ else
     exit 1
 fi
 
-# Test 2: Cron Mode
+# Test 2: Validate Cron mode
 log "Testing Cron mode..."
 docker run --rm --name "$CONTAINER_NAME" -d \
     -e ONE_SHOT=false \
-    -e REFLECTOR_SCHEDULE="*/2 * * * *" \ # Temporär alle 2 Minuten
+    -e REFLECTOR_SCHEDULE="*/2 * * * *" \
     -v mirrorlist-test:/etc/pacman.d \
     "$IMAGE_NAME"
 
-log "Waiting for cron job to execute..."
-sleep 150 # Warte 2,5 Minuten, um sicherzustellen, dass der Cron-Job ausgeführt wurde
+log "Waiting for the cron job to execute..."
+sleep 150 # Wait 2.5 minutes to ensure the cron job has been executed
 
 mirrorlist_updated=$(docker exec "$CONTAINER_NAME" grep -c '^Server' /etc/pacman.d/mirrorlist || echo "0")
 if [[ "$mirrorlist_updated" -gt 0 ]]; then
@@ -48,7 +48,7 @@ else
     exit 1
 fi
 
-# Cleanup
+# Cleanup resources
 log "Stopping test container and cleaning up resources..."
 docker stop "$CONTAINER_NAME" >/dev/null 2>&1 || true
 docker volume rm mirrorlist-test >/dev/null 2>&1 || true
