@@ -66,7 +66,10 @@ if [ "$ONE_SHOT" = "true" ]; then
 else
     log normal "Running in cron mode with schedule: $REFLECTOR_SCHEDULE"
 
-    # Ensure the log directory exists
+    # Ensure the required cache directory exists
+    mkdir -p /root/.cache/crontab
+
+    # Ensure the log directory and file exist
     mkdir -p /var/log
     touch /var/log/reflector-update.log
     chmod 666 /var/log/reflector-update.log
@@ -80,7 +83,7 @@ else
         exit 1
     fi
 
-    # Start the cron daemon with debug logging
+    # Start the cron daemon in foreground mode
     log normal "Starting cron daemon..."
-    exec crond -f -L /var/log/cron.log
+    exec crond -f
 fi
