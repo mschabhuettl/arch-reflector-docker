@@ -56,18 +56,30 @@ services:
     image: mschabhuettl/arch-reflector-docker:latest
     container_name: arch-reflector
     environment:
+      # ONE_SHOT=true: update once and exit
+      # ONE_SHOT=false: run cron schedule (default)
       - ONE_SHOT=false
+
+      # Change schedule if desired, default: "0 * * * *" (every hour)
       - REFLECTOR_SCHEDULE=0 * * * *
-      # Optional:
+
+      # Default Reflector arguments (if REFLECTOR_ARGS not set):
+      # --save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
+      # Uncomment and adjust if needed:
       # - REFLECTOR_ARGS=--save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
+
+      # Set TZ to Europe/Vienna for local time (default is UTC):
       # - TZ=Europe/Vienna
-      # - LOG_LEVEL=normal
+
+      # LOG_LEVEL can be quiet, normal, or debug. Default is normal if unset.
+      - LOG_LEVEL=normal
     volumes:
-      - arch_mirrors:/etc/pacman.d
+      # Persist mirrorlist so it survives container restarts
+      - mirrorlist:/etc/pacman.d
     restart: always
 
 volumes:
-  arch_mirrors:
+  mirrorlist:
 ```
 
 Then run:
