@@ -1,22 +1,19 @@
 name: Advanced Build, Test, and Push Docker CI/CD Workflow
 
 on:
-  push:
-    branches:
-      - main          # Trigger on pushes to main
-      - "release/*"   # Trigger on release branches
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:  # Allow manual triggering
+  workflow_run:
+    workflows: ["Run Security and Functionality Tests"]
+    types:
+      - completed
 
 jobs:
-  build-test-and-push:
+  build-and-push:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     permissions:
-      contents: read   # Required to read repository contents
-      packages: write  # Required for GitHub Container Registry (GHCR)
+      contents: read
+      packages: write
 
     strategy:
       matrix:
