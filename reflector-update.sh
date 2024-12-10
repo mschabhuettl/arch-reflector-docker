@@ -2,18 +2,18 @@
 set -euo pipefail
 
 # This script updates the Arch Linux mirrorlist using reflector.
-# It reads parameters from the environment to allow dynamic customization:
+# Default arguments (if REFLECTOR_ARGS not set):
+# --save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
 #
-# Environment variables:
-# - REFLECTOR_ARGS: A string containing reflector parameters.
-#   Example: "--country Germany --latest 10 --protocol https --sort rate"
-#   If not provided, a default set of parameters will be used.
+# If REFLECTOR_ARGS is set, it will override the default arguments entirely.
+#
+# Logging:
+# After each update, the script logs the timestamp and arguments used
+# to /var/log/reflector-update.log (in UTC).
 
-DEFAULT_ARGS="--latest 10 --sort rate --protocol https"
+DEFAULT_ARGS="--save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5"
 ARGS="${REFLECTOR_ARGS:-$DEFAULT_ARGS}"
 
-# Run reflector with the specified (or default) arguments to update the mirrorlist
-/usr/bin/reflector $ARGS --save /etc/pacman.d/mirrorlist
+/usr/bin/reflector $ARGS
 
-# Log the update operation with a timestamp in UTC
 echo "$(date -u +'%Y-%m-%dT%H:%M:%SZ') Mirrorlist updated using args: $ARGS" >> /var/log/reflector-update.log
