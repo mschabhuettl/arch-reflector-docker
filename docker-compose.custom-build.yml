@@ -6,13 +6,19 @@ services:
       # ONE_SHOT=true: update once and exit
       # ONE_SHOT=false: run cron schedule (default)
       - ONE_SHOT=false
-      # Change schedule if desired
+
+      # Change schedule if desired, default: "0 * * * *" for hourly
       - REFLECTOR_SCHEDULE=0 * * * *
-      # Reflector args are optional; if unset, defaults are used
-      # - REFLECTOR_ARGS=--country US --latest 5 --protocol https --save /etc/pacman.d/mirrorlist
-      # Change TZ if needed, e.g. Europe/Berlin
-      # - TZ=Europe/Berlin
-      # LOG_LEVEL can be quiet, normal, or debug
+
+      # By default, reflector uses:
+      # --save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
+      # Uncomment and adjust if needed:
+      # - REFLECTOR_ARGS=--save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
+
+      # Set TZ to Europe/Vienna if you want local time (instead of default UTC):
+      # - TZ=Europe/Vienna
+
+      # LOG_LEVEL can be quiet, normal, or debug. Default is normal if unset.
       - LOG_LEVEL=normal
     volumes:
       # Persist mirrorlist so it survives container restarts
