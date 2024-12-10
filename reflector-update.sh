@@ -18,9 +18,17 @@ LOG_LEVEL="${LOG_LEVEL:-normal}"
 LOG_FILE="/var/log/reflector-update.log"
 DEBUG_LOG="/tmp/reflector-debug.log"
 
-# Enable debugging and log output to a debug file
-set -x
-exec >> "$DEBUG_LOG" 2>&1
+# Ensure log file exists
+if [ ! -f "$LOG_FILE" ]; then
+    touch "$LOG_FILE"
+    chmod 666 "$LOG_FILE"
+fi
+
+# Enable debugging and log output to a debug file (temporarily)
+if [[ "$LOG_LEVEL" == "debug" ]]; then
+    set -x
+    exec >> "$DEBUG_LOG" 2>&1
+fi
 
 # Logging function
 log() {
@@ -33,12 +41,6 @@ log() {
 
 DEFAULT_ARGS="--save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5"
 ARGS="${REFLECTOR_ARGS:-$DEFAULT_ARGS}"
-
-# Ensure log file exists
-if [ ! -f "$LOG_FILE" ]; then
-    touch "$LOG_FILE"
-    chmod 666 "$LOG_FILE"
-fi
 
 log debug "Starting Reflector Update Script"
 log debug "Arguments for reflector: $ARGS"
