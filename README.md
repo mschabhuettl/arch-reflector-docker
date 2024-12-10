@@ -30,10 +30,10 @@ docker pull mschabhuettl/arch-reflector-docker:latest
 #### 2️⃣ **Run the Container with Cron Updates**
 ```bash
 docker run -d 
-  --name arch-reflector 
-  -e ONE_SHOT=false 
-  -e REFLECTOR_SCHEDULE="0 * * * *" 
-  -v mirrorlist:/etc/pacman.d 
+  --name arch-reflector \
+  -e ONE_SHOT=false \
+  -e REFLECTOR_SCHEDULE="0 * * * *" \
+  -v mirrorlist:/etc/pacman.d \
   mschabhuettl/arch-reflector-docker:latest
 ```
 This runs the container in cron mode, updating your mirrorlist every hour.
@@ -56,27 +56,36 @@ services:
     image: mschabhuettl/arch-reflector-docker:latest
     container_name: arch-reflector
     environment:
-      # ONE_SHOT=true: update once and exit
-      # ONE_SHOT=false: run cron schedule (default)
+      # Update once and exit (ONE_SHOT=true) or run periodically (ONE_SHOT=false, default)
       - ONE_SHOT=false
 
-      # Change schedule if desired, default: "0 * * * *" (every hour)
+      # Cron schedule for periodic updates (default: "0 * * * *", hourly)
       - REFLECTOR_SCHEDULE=0 * * * *
 
-      # Default Reflector arguments (if REFLECTOR_ARGS not set):
-      # --save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
-      # Uncomment and adjust if needed:
-      # - REFLECTOR_ARGS=--save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
+      # Reflector arguments (optional, defaults shown below)
+      # Example: --save /etc/pacman.d/mirrorlist --country France,Germany --protocol https --latest 5
+      # Uncomment to override defaults:
+      # - REFLECTOR_ARGS=--save /etc/pacman.d/mirrorlist --country Austria --protocol https --latest 10
 
-      # Set TZ to Europe/Vienna for local time (default is UTC):
+      # Timezone for the container (default: UTC)
+      # Uncomment and adjust to your timezone:
       # - TZ=Europe/Vienna
 
-      # LOG_LEVEL can be quiet, normal, or debug. Default is normal if unset.
+      # Logging level: "quiet", "normal" (default), or "debug"
       - LOG_LEVEL=normal
+
     volumes:
-      # Persist mirrorlist so it survives container restarts
+      # Persist mirrorlist to ensure changes survive container restarts
       - mirrorlist:/etc/pacman.d
+
     restart: always
+
+    healthcheck:
+      # Verify container health with a 30s interval and 5s timeout
+      test: ["CMD", "pgrep", "crond"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
   mirrorlist:
@@ -93,9 +102,9 @@ docker compose up -d
 
 If you only want to update your mirrorlist once and then exit:
 ```bash
-docker run --rm 
-  -e ONE_SHOT=true 
-  -v mirrorlist:/etc/pacman.d 
+docker run --rm \
+  -e ONE_SHOT=true \
+  -v mirrorlist:/etc/pacman.d \
   mschabhuettl/arch-reflector-docker:latest
 ```
 This will run reflector once and then the container stops.
