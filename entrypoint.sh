@@ -66,10 +66,21 @@ if [ "$ONE_SHOT" = "true" ]; then
 else
     log normal "Running in cron mode with schedule: $REFLECTOR_SCHEDULE"
 
+    # Ensure the log directory exists
+    mkdir -p /var/log
+    touch /var/log/reflector-update.log
+    chmod 666 /var/log/reflector-update.log
+
     # Create a crontab entry
     echo "$REFLECTOR_SCHEDULE /usr/local/bin/reflector-update.sh >> /var/log/reflector-update.log 2>&1" | crontab -
+    
+    # Validate that the crontab was set correctly
+    if ! crontab -l | grep -q "/usr/local/bin/reflector-update.sh"; then
+        log error "Failed to set crontab entry!"
+        exit 1
+    fi
 
-    # Start the cron daemon
+    # Start the cron daemon with debug logging
     log normal "Starting cron daemon..."
-    exec crond -n
+    exec crond -f -L /var/log/cron.log
 fi

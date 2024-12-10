@@ -24,6 +24,9 @@ COPY reflector-update.sh /usr/local/bin/reflector-update.sh
 # Ensure scripts are executable
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/reflector-update.sh
 
+# Add bash as a default shell for debugging
+CMD ["/bin/bash"]
+
 # Use the entrypoint script to handle all startup logic
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
