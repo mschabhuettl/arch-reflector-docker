@@ -42,12 +42,9 @@ trap cleanup SIGTERM SIGINT
 
 # Set timezone if provided
 if [ -n "${TZ:-}" ]; then
-    if [ -f "/usr/share/zoneinfo/$TZ" ]; then
-        ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime
-        log normal "Timezone set to $TZ"
-    else
-        log error "Invalid TZ value '$TZ'. Falling back to UTC."
-    fi
+    log normal "Timezone set to $TZ (using TZ variable only, skipping /etc/localtime)."
+else
+    log normal "No TZ variable set. Using default UTC."
 fi
 
 # Check for necessary commands
